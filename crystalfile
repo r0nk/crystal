@@ -1,1 +1,2 @@
-fr*.txt count to.txt
+nodes/from.txt edges/count nodes/to.txt
+nodes/from.txt edges/say nodes/said.txt
