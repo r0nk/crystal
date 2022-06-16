@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,9 +21,7 @@ type edge struct {
 }
 
 func run_edge_script(e edge, cause string) {
-
 	//TODO pipe the cause file into standard input for the program
-
 	fmt.Printf("%s %s %s (%s)\n", e.listen_regex, e.script, e.output, cause)
 	// set environmental variable to changing file
 	out, err := exec.Command(e.script, cause).Output()
@@ -36,6 +36,37 @@ func run_edge_script(e edge, cause string) {
 	file.WriteString(string(out))
 }
 
+func matching_files(regex string) []string {
+	var files []string
+
+	if regex[0] == '/' {
+		root := "/"
+	} else {
+		root := "."
+	}
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		match, err := regexp.MatchString(regex, path)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if !info.IsDir() && match {
+			files = append(files, path)
+		}
+
+		return nil
+	})
+
+	return files
+}
+
 func handle_edge(e edge) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -43,11 +74,10 @@ func handle_edge(e edge) {
 	}
 	defer watcher.Close()
 
-	//TODO do this for every file that the regex matches
-	// it currently only does direct matches
-	//TODO handle multiple connection cases
-	watcher.Add(e.listen_regex)
-	fmt.Printf("Listening to %s\n", e.listen_regex)
+	for _, file := range matching_files(e.listen_regex) {
+		watcher.Add(file)
+		fmt.Printf("Setting up edge: %s | %s > %s\n", file, e.script, e.output)
+	}
 
 	for {
 		select {
@@ -88,7 +118,7 @@ func read_edges() []edge {
 	}
 
 	//TODO do some basic sanity checks on the graph
-	// (infinite loops and the like)
+	// (infinite loops, multiple connections and the like)
 
 	return ret
 }
