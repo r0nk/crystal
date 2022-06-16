@@ -49,7 +49,7 @@ func handle_edge(e edge) {
 			}
 			log.Println("event:", event)
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				run_edge_script(e, event.Name)
+				go run_edge_script(e, event.Name)
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -58,7 +58,6 @@ func handle_edge(e edge) {
 			log.Println("error:", err)
 		}
 	}
-
 	//TODO handle multiple connection cases
 	fmt.Printf("asdf", e)
 }
