@@ -2,18 +2,33 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"os/exec"
+	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 type edge struct {
 	listen_regex string
-	output string
-	script string
+	output       string
+	script       string
 }
 
-func run_edge_script(e edge,cause string) {
-	cmd := exec.Command(e.script_file,cause)
-	cmd.Run()
+func run_edge_script(e edge, cause string) {
+	//set environmental variable to changing file
+	fmt.Printf("running edge script" + e.output)
+	out, err := exec.Command(e.script, cause).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	file, err := os.Create(e.output)
+	defer file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	file.WriteString(string(out))
 }
 
 func handle_edge(e edge) {
@@ -24,6 +39,7 @@ func handle_edge(e edge) {
 	defer watcher.Close()
 
 	//TODO do this for every file that the regex matches
+	// it currently only does direct matches
 	watcher.Add(e.listen_regex)
 	for {
 		select {
@@ -33,7 +49,7 @@ func handle_edge(e edge) {
 			}
 			log.Println("event:", event)
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				run_edge_script(e,event.Name)
+				run_edge_script(e, event.Name)
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -43,33 +59,30 @@ func handle_edge(e edge) {
 		}
 	}
 
-	//on fs change:
-		//set environmental variable to changing file
-		//cmd := exec.Command(edge.script_file)
-		//cmd.Run()
 	//TODO handle multiple connection cases
-	fmt.Printf("asdf",e);
+	fmt.Printf("asdf", e)
 }
 
-func read_edges() edge[]{
-	var ret edge[]
+func read_edges() []edge {
+	var ret []edge
 	//for each entry in crystalfile
-		//read entry
-		//add to ret
+	//read entry
+	//add to ret
 	//return ret
 	var e edge
-	e.listen_regex="nodes/from.txt"
-	e.output="nodes/to.txt"
-	e.script_file="edges/count"
-	ret = ret.append(e)
+	e.listen_regex = "nodes/from.txt"
+	e.output = "nodes/to.txt"
+	e.script = "edges/count"
+	ret = append(ret, e)
 	return ret
 }
 
 func main() {
-	for _,edge := range read_edges() {
+	fmt.Printf("starting up...")
+	for _, edge := range read_edges() {
 		go handle_edge(edge)
 	}
 	for { //watch edges
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
