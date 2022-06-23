@@ -79,7 +79,11 @@ func read_edges() []edge {
 	var e edge
 	for fscan.Scan() {
 		count += 1
-		fields := strings.Fields(fscan.Text())
+		line := fscan.Text()
+		fields := strings.Fields(line)
+		if line[0] == '#' {
+			continue
+		}
 		e.listen_regex = fields[0]
 		e.script = fields[1]
 		e.output = fields[2]
@@ -131,7 +135,7 @@ func handle_events(crystalfile string) {
 			if !ok {
 				return
 			}
-			log.Println("event:", event)
+			//			log.Println("event:", event)
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				if event.Name == crystalfile {
 					edges = read_edges()
