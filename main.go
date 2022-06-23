@@ -42,9 +42,7 @@ func run_edge_script(e edge, cause string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	out, err := cmd.Output()
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,71 +63,6 @@ func run_edge_script(e edge, cause string) {
 
 	diff := time.Now().Sub(before)
 	fmt.Printf("%v %d %s(%d) %s %s(%d)\n", time.Now().UnixNano(), diff.Nanoseconds(), cause, input_size, e.script, e.output, output_size)
-}
-
-func matching_files(regex string) []string {
-	var files []string
-	root := "."
-
-	if regex[0] == '/' {
-		root = "/"
-	}
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-
-		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-		match, err := regexp.MatchString(regex, path)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if !info.IsDir() && match {
-			files = append(files, path)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return files
-}
-
-func handle_edge(e edge) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
-
-	for _, file := range matching_files(e.listen_regex) {
-		watcher.Add(file)
-		fmt.Printf("Setting up edge: %s | %s > %s\n", file, e.script, e.output)
-	}
-
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			//log.Println("event:", event)
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				go run_edge_script(e, event.Name)
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
-			log.Println("error:", err)
-		}
-	}
 }
 
 func read_edges() []edge {
@@ -159,8 +92,10 @@ func read_edges() []edge {
 
 	//TODO edges should also have options as the 4th field
 	// append
-	// delete after use
+	// anew
+	// clear after use
 	// line by line
+	// split
 
 	//TODO do some basic sanity checks on the graph
 	// (infinite loops, multiple connections and the like)
@@ -168,17 +103,59 @@ func read_edges() []edge {
 	return ret
 }
 
-func main() {
-	fmt.Printf("Starting up...\n")
+func handle_events(crystalfile string) {
+	edges := read_edges()
 
-	for _, edge := range read_edges() {
-		go handle_edge(edge)
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
 	}
-	fmt.Printf("Finished starting up, watching and waiting\n")
+	defer watcher.Close()
+
+	watcher.Add("./")
+	filepath.Walk("./", func(walkPath string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			if err = watcher.Add(walkPath); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 
 	for {
-		//TODO watch crystal file for changes
-		//TODO watch this directory for new files that might match regex
-		time.Sleep(1 * time.Second)
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			log.Println("event:", event)
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				if event.Name == crystalfile {
+					edges = read_edges()
+				}
+				for _, e := range edges {
+					match, err := regexp.MatchString(e.listen_regex, event.Name)
+					if err != nil {
+						log.Fatal(err)
+					}
+					if match {
+						go run_edge_script(e, event.Name)
+					}
+				}
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
 	}
+
+}
+
+func main() {
+	handle_events("crystalfile")
 }

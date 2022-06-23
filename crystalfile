@@ -1,2 +1,2 @@
 nodes/from.txt edges/count nodes/to.txt
-nodes/from.txt edges/say nodes/said.txt
+nodes/fr.*.txt edges/say nodes/said.txt
