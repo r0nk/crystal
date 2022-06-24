@@ -27,7 +27,7 @@ func run_edge_script(e edge, cause string) {
 
 	stat, err := os.Stat(cause)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s[%s]\n", err, e.script)
 	}
 
 	input_size := stat.Size()
@@ -40,22 +40,22 @@ func run_edge_script(e edge, cause string) {
 	file.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s[%s]\n", err, e.script)
 	}
 	out, err := cmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s[%s]\n", err, e.script)
 	}
 
 	file, err = os.Create(e.output)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s[%s]\n", err, e.script)
 	}
 	file.WriteString(string(out))
 	stat, err = file.Stat()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s[%s]\n", err, e.script)
 	}
 	output_size := stat.Size()
 
