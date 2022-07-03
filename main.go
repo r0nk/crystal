@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -107,6 +109,35 @@ func read_edges() []edge {
 	return ret
 }
 
+//https://stackoverflow.com/questions/15879136/how-to-calculate-sha256-file-checksum-in-go
+func md5sum(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func file_changed(last map[string]string, path string) bool {
+	hash, err := md5sum(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if val, ok := last[path]; ok {
+		if val == hash {
+			return false
+		}
+	}
+	last[path] = hash
+	return true
+}
+
 func handle_events(crystalfile string) {
 	edges := read_edges()
 
@@ -129,14 +160,15 @@ func handle_events(crystalfile string) {
 		return nil
 	})
 
+	last_hashes := make(map[string]string)
+
 	for {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return
 			}
-			//			log.Println("event:", event)
-			if event.Op&fsnotify.Write == fsnotify.Write {
+			if event.Op&fsnotify.Write == fsnotify.Write && file_changed(last_hashes, event.Name) {
 				if event.Name == crystalfile {
 					edges = read_edges()
 				}
