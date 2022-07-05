@@ -34,6 +34,8 @@ func run_edge_script(e edge, cause string) {
 
 	input_size := stat.Size()
 
+	fmt.Printf("%v starting %s %s %s\n", time.Now().UnixNano(), cause, e.script, e.output)
+
 	cmd := exec.Command(e.script, cause)
 	stdin, err := cmd.StdinPipe()
 
@@ -102,9 +104,6 @@ func read_edges() []edge {
 	// clear after use
 	// line by line
 	// split
-
-	//TODO do some basic sanity checks on the graph
-	// (infinite loops, multiple connections and the like)
 
 	return ret
 }
