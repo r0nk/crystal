@@ -34,6 +34,11 @@ func run_edge_script(e edge, cause string) {
 
 	input_size := stat.Size()
 
+	// Don't run on empty files.
+	if input_size == 0 {
+		return
+	}
+
 	fmt.Printf("%v starting %s %s %s\n", time.Now().UnixNano(), cause, e.script, e.output)
 
 	cmd := exec.Command(e.script, cause)
