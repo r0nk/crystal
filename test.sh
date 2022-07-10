@@ -2,9 +2,9 @@
 
 go run . &
 
-sleep 1
+sleep 5
 echo asdf > nodes/from.txt
-sleep 1
+sleep 5
 
 echo killing...
 pkill crystal

@@ -47,6 +47,7 @@ func run_edge_script(e edge, cause string) {
 	file, err := os.Open(cause)
 	io.Copy(stdin, file)
 	file.Close()
+	stdin.Close()
 
 	if err != nil {
 		log.Fatalf("%s[%s]\n", err, e.script)
