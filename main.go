@@ -39,7 +39,7 @@ func run_edge_script(e edge, cause string) {
 		return
 	}
 
-	fmt.Printf("%v starting %s %s %s\n", time.Now().UnixNano(), cause, e.script, e.output)
+	fmt.Printf("%v starting %s %s %s\n", time.Now().Format(time.RFC3339), cause, e.script, e.output)
 
 	cmd := exec.Command(e.script, cause)
 	stdin, err := cmd.StdinPipe()
@@ -71,7 +71,7 @@ func run_edge_script(e edge, cause string) {
 	file.Close()
 
 	diff := time.Now().Sub(before)
-	fmt.Printf("%v %d %s(%d) %s %s(%d)\n", time.Now().UnixNano(), diff.Nanoseconds(), cause, input_size, e.script, e.output, output_size)
+	fmt.Printf("%v %d %s(%d) %s %s(%d)\n", time.Now().Format(time.RFC3339), diff.Nanoseconds(), cause, input_size, e.script, e.output, output_size)
 }
 
 func read_edges() []edge {
