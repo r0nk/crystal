@@ -1,1 +1,3 @@
 nodes/from.txt edges/count nodes/to.txt
+nodes/from.txt edges/copy nodes/copy.txt
+nodes/domains.txt edges/resolve nodes/domains_to_ip.txt

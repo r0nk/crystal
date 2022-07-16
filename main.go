@@ -54,7 +54,8 @@ func run_edge_script(e edge, cause string) {
 	}
 	out, err := cmd.Output()
 	if err != nil {
-		log.Fatalf("%s[%s]\n", err, e.script)
+		fmt.printf("%s[%s]\n", err, e.script)
+		//don't exit, we can survive an edge not running properly
 	}
 
 	file, err = os.Create(e.output)
